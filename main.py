@@ -89,11 +89,11 @@ def cut_noise(samples):
     return samples
 
 
-def created_c(path, dtype, samples):
+def create_c(path, dtype, samples):
     c_file = '\nconst '
     c_file += 'uint16_t ' if dtype > 8 else 'uint8_t '
     c_file += path.replace('/', '_')[:-4]
-    c_file += '[{}] '.format(len(samples))
+    c_file += '[{}] = '.format(len(samples))
     c_file += '{'
 
     if dtype == 8:
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         samples_edit = oversampling(fs, fo, samples_edit)
         samples_edit = cut_noise(samples_edit)
         path_edit = ''.join((w[:-4], '_edit.wav'))
-        c_file += created_c(w, 12, samples_edit)
+        c_file += create_c(w, 12, samples_edit)
         write_wav(path_edit, fo, 12, samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
