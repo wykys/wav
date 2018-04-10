@@ -89,11 +89,39 @@ def cut_noise(samples):
     return samples
 
 
+def created_c(path, dtype, samples):
+    c_file = '\nconst '
+    c_file += 'uint16_t ' if dtype > 8 else 'uint8_t '
+    c_file += path.replace('/', '_')[:-4]
+    c_file += '[{}] '.format(len(samples))
+    c_file += '{'
+
+    if dtype == 8:
+        samples *= 2**7 - 1
+        samples += 2**7 - 1
+    elif dtype == 12:
+        samples *= 2**11 - 1
+        samples += 2**11 - 1
+    elif dtype == 16:
+        samples *= 2**15 - 1
+        samples += 2**15 - 1
+
+    samples = np.array(samples, np.uint16)
+    for s in samples:
+        c_file += '{},'.format(s)
+
+    c_file = c_file[:-1]
+    c_file += '};\n'
+
+    return c_file
+
+
 if __name__ == '__main__':
     path_wav = find_wav(path_sound_in)
     size = 0
     size_edit = 0
     fo = 16e3
+    c_file = ''
     for w in path_wav:
         fs, samples = read_wav(w)
         b, a = antialiasing_filter(0.5 * fo, fs, 2)
@@ -101,6 +129,7 @@ if __name__ == '__main__':
         samples_edit = oversampling(fs, fo, samples_edit)
         samples_edit = cut_noise(samples_edit)
         path_edit = ''.join((w[:-4], '_edit.wav'))
+        c_file += created_c(w, 12, samples_edit)
         write_wav(path_edit, fo, 12, samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
@@ -112,4 +141,8 @@ if __name__ == '__main__':
     print('size     : {:10,d} samples -> {:10,d} B'.format(size, 2 * size))
     print('size_edit: {:10,d} samples -> {:10,d} B'.format(size_edit, 2 * size_edit))
     print('compresion: {:9,d} %'.format(100 - int(round(size_edit/(size/100)))))
+
+    with open('sound.c', 'w') as fw:
+        fw.write(c_file)
+
     lab.show()
