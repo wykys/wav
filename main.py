@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import os
-import wave
 
 import pylab as lab
 
 import numpy as np
 from scipy.signal import butter, lfilter, freqz
+from scipy.io import wavfile
+
 
 path_sound_in = 'sound_in/'
 path_sound_out = 'sound_out/'
@@ -23,31 +24,22 @@ def find_wav(path):
     return sorted(wavs)
 
 
-def read_wav(path, fs, samples):
-    with wave.open(path, 'rb') as wav:
-        channels = wav.getnchannels()
-        sample_width = wav.getsampwidth()
-        frames = wav.getnframes()
-        fs = wav.getframerate()
+def read_wav(path):
+    fs, raw = wavfile.read(path)
+    dtype = raw.dtype
+    raw  = np.array(raw, np.float)
 
-        raw = [[] for i in range(channels)]
+    if len(raw.shape) == 2:
+        channels = raw.shape[-1]
+        raw = sum(raw.transpose()) / channels
 
-        for i in range(frames):
-            frame = wav.readframes(1)
-            for channel in range(channels):
-                raw[channel].append(
-                    int.from_bytes(
-                        frame[channel * sample_width:channel * sample_width + sample_width],
-                        byteorder='little',
-                        signed=True
-                    )
-                )
+    if dtype == np.dtype(np.int16):
+        raw /= 2**15
+    elif dtype == np.dtype(np.uint8):
+        raw -= 2**7 - 1
+        raw /= 2**7 - 1
 
-        samples = np.array(raw) / 2**15
-        if channels > 1:
-            samples = sum(samples) / channels
-        return fs, samples
-
+    return fs, raw
 
 
 
@@ -99,12 +91,12 @@ if __name__ == '__main__':
         b, a = antialiasing_filter(0.5 * fo, fs, 13)
         samples_edit = lfilter(b, a, samples)
         samples_edit = oversampling(fs, fo, samples_edit)
-        samples_edit = cut_noise(samples_edit)
+        #samples_edit = cut_noise(samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
         print('{}: {}\t{}'.format(w, len(samples), len(samples_edit)))
 
-        #graf(samples, samples_edit)
+        graf(samples, samples_edit)
         break
     print('size     : {:10d}'.format(size))
     print('size_edit: {:10d}'.format(size_edit))
