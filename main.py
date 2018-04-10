@@ -42,7 +42,12 @@ def read_wav(path):
     return fs, raw
 
 def write_wav(path, fs, dtype, samples):
-    if dtype == np.int16:
+    if dtype == 12:
+        samples = np.array(samples * (2**15 - 1), np.int16)
+        samples = np.right_shift(samples, 4)
+        samples = np.left_shift(samples, 4)
+
+    elif dtype == 16:
         samples = np.array(samples * (2**15 - 1), np.int16)
 
     wavfile.write(path, int(fs), samples)
@@ -97,7 +102,7 @@ if __name__ == '__main__':
         samples_edit = lfilter(b, a, samples)
         samples_edit = oversampling(fs, fo, samples_edit)
         samples_edit = cut_noise(samples_edit)
-        write_wav('test.wav', fo, np.int16, samples_edit)
+        write_wav('test.wav', fo, 12, samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
         print('{}: {}\t{}'.format(w, len(samples), len(samples_edit)))
