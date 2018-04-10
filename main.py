@@ -43,7 +43,7 @@ def read_wav(path):
 
 def write_wav(path, fs, dtype, samples):
     if dtype == np.int16:
-        samples = np.array(samples * 2**15, np.int16)
+        samples = np.array(samples * (2**15 - 1), np.int16)
 
     wavfile.write(path, int(fs), samples)
 
@@ -55,7 +55,7 @@ def antialiasing_filter(lowcut, fs, order):
     return b, a
 
 def oversampling(fin, fout, samples):
-    step = int(round(fin / fout)) - 1
+    step = int(round(fin / fout))
     return samples[::step]
 
 
@@ -93,16 +93,16 @@ if __name__ == '__main__':
     fo = 16e3
     for w in path_wav:
         fs, samples = read_wav(w)
-        b, a = antialiasing_filter(0.5 * fo, fs, 13)
+        b, a = antialiasing_filter(0.5 * fo, fs, 2)
         samples_edit = lfilter(b, a, samples)
         samples_edit = oversampling(fs, fo, samples_edit)
-        #samples_edit = cut_noise(samples_edit)
+        samples_edit = cut_noise(samples_edit)
         write_wav('test.wav', fo, np.int16, samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
         print('{}: {}\t{}'.format(w, len(samples), len(samples_edit)))
 
-        graf(samples, samples_edit)
+        #graf(samples, samples_edit)
         break
     print('size     : {:10d}'.format(size))
     print('size_edit: {:10d}'.format(size_edit))
