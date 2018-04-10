@@ -9,7 +9,7 @@ from scipy.signal import butter, lfilter, freqz
 from scipy.io import wavfile
 
 
-path_sound_in = 'sound_in/'
+path_sound_in = 'sound'
 
 def find_wav(path):
     path += '/' if path[-1] != '/' else ''
@@ -104,10 +104,12 @@ if __name__ == '__main__':
         write_wav(path_edit, fo, 12, samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
-        print('{}: {}\t{}'.format(w, len(samples), len(samples_edit)))
+        print('{}: {:10d}     edit {:10d}'.format(w, len(samples), len(samples_edit)))
 
         #graf(samples, samples_edit)
         #break
-    print('size     : {:10d}'.format(size))
-    print('size_edit: {:10d}'.format(size_edit))
+    print('===================================================================')
+    print('size     : {:10,d} samples -> {:10,d} B'.format(size, 2 * size))
+    print('size_edit: {:10,d} samples -> {:10,d} B'.format(size_edit, 2 * size_edit))
+    print('compresion: {:9,d} %'.format(100 - int(round(size_edit/(size/100)))))
     lab.show()
