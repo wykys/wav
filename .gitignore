@@ -103,3 +103,7 @@ ENV/
 
 # wav
 *.wav
+
+# C files
+*.c
+*.h
