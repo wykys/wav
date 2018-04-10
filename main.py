@@ -10,8 +10,6 @@ from scipy.io import wavfile
 
 
 path_sound_in = 'sound_in/'
-path_sound_out = 'sound_out/'
-
 
 def find_wav(path):
     path += '/' if path[-1] != '/' else ''
@@ -19,7 +17,7 @@ def find_wav(path):
     for fil in os.scandir(path):
         if fil.is_dir():
             wavs.extend(find_wav(path + fil.name))
-        elif len(fil.name) > len('.wav') and fil.name[-len('.wav'):] == '.wav':
+        elif len(fil.name) > len('.wav') and fil.name[-len('.wav'):] == '.wav' and not ('_edit' in fil.name):
             wavs.append(path + fil.name)
     return sorted(wavs)
 
@@ -102,13 +100,14 @@ if __name__ == '__main__':
         samples_edit = lfilter(b, a, samples)
         samples_edit = oversampling(fs, fo, samples_edit)
         samples_edit = cut_noise(samples_edit)
-        write_wav('test.wav', fo, 12, samples_edit)
+        path_edit = ''.join((w[:-4], '_edit.wav'))
+        write_wav(path_edit, fo, 12, samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
         print('{}: {}\t{}'.format(w, len(samples), len(samples_edit)))
 
         #graf(samples, samples_edit)
-        break
+        #break
     print('size     : {:10d}'.format(size))
     print('size_edit: {:10d}'.format(size_edit))
     lab.show()
