@@ -2,12 +2,9 @@
 
 import os
 
-import pylab as lab
-
 import numpy as np
 from scipy.signal import butter, lfilter, freqz
 from scipy.io import wavfile
-
 
 path_sound_in = 'sound'
 
@@ -62,17 +59,6 @@ def oversampling(fin, fout, samples):
     return samples[::step]
 
 
-def graf(s1, s2):
-    lab.figure()
-    lab.subplot(211)
-    lab.plot(s1)
-    lab.title('s1')
-
-    lab.subplot(212)
-    lab.plot(s2)
-    lab.title('s2')
-
-
 def cut_noise(samples):
     trash = 0.01
     for i in range(len(samples)):
@@ -89,11 +75,33 @@ def cut_noise(samples):
     return samples
 
 
+def create_h(path, dtype, samples):
+    name = path.replace('/', '_')[:-4]
+    h_file = '#define {}_SIZE {}\n'.format(name.upper(), len(samples))
+    h_file += 'extern const '
+    h_file += 'uint16_t ' if dtype > 8 else 'uint8_t '
+    h_file += name
+    h_file += '[{}_SIZE];\n'.format(name.upper())
+
+    return h_file
+
+def sort_h(header):
+    defines = []
+    externs = []
+    for line in header:
+        if 'extern' in line:
+            externs.append(line)
+        elif '#define' in line:
+            defines.append(line)
+
+    return defines + ['\n\n'] + externs
+
 def create_c(path, dtype, samples):
+    name = path.replace('/', '_')[:-4]
     c_file = '\nconst '
     c_file += 'uint16_t ' if dtype > 8 else 'uint8_t '
-    c_file += path.replace('/', '_')[:-4]
-    c_file += '[{}] = '.format(len(samples))
+    c_file += name
+    c_file += '[{}_SIZE] = '.format(name.upper())
     c_file += '{'
 
     if dtype == 8:
@@ -122,6 +130,7 @@ if __name__ == '__main__':
     size_edit = 0
     fo = 16e3
     c_file = ''
+    h_file = ''
     for w in path_wav:
         fs, samples = read_wav(w)
         b, a = antialiasing_filter(0.5 * fo, fs, 2)
@@ -131,12 +140,12 @@ if __name__ == '__main__':
         path_edit = ''.join((w[:-4], '_edit.wav'))
         write_wav(path_edit, fo, 12, samples_edit)
         c_file += create_c(w, 12, samples_edit)
+        h_file += create_h(w, 12, samples_edit)
         size += len(samples)
         size_edit += len(samples_edit)
         print('{}: {:10d}     edit {:10d}'.format(w, len(samples), len(samples_edit)))
 
-        #graf(samples, samples_edit)
-        #break
+
     print('===================================================================')
     print('size     : {:10,d} samples -> {:10,d} B'.format(size, 2 * size))
     print('size_edit: {:10,d} samples -> {:10,d} B'.format(size_edit, 2 * size_edit))
@@ -145,4 +154,11 @@ if __name__ == '__main__':
     with open('sound.c', 'w') as fw:
         fw.write(c_file)
 
-    lab.show()
+    with open('sound.h', 'w') as fw:
+        fw.write(h_file)
+
+    with open('sound.h', 'r') as fr:
+        header = fr.readlines()
+
+    with open('sound.h', 'w') as fw:
+        fw.writelines(sort_h(header))
